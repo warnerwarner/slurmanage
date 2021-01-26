@@ -1,11 +1,26 @@
 import numpy as np
+import h5py
 import sys
 import os
 
-chan_index = list(sys.argv)[1]
-data_loc = '{data_loc}' % int(chan_index)
+data_loc = '{data_loc}'
+num_of_chans = {num_of_chans}
+chan_index = int(list(sys.argv)[1])
 
-data = np.load(data_loc, dtype='{dtype}')
+out_loc = '{out_loc}'
+
+
+if '.npy' in data_loc:
+    data = np.memmap(data_loc, dtype={data_type})
+    data = data.reshape(num_of_chans, int(len(data)/num_of_chans), order='{order}')
+
+elif '.h5' in data_loc:
+    file = h5py.File(data_loc)
+    data = file['sig']
+
+chan_index = int(list(sys.argv)[1])
+
+chan = data[chan_index]
 
 thresh_multi = {thresh_multi}
 std_method = {std_method}
@@ -30,8 +45,8 @@ elif pol == 'pos':
 inter_spike_window = {inter_spike_window}
 prev_spike = -inter_spike_window
 spike_times = []
-for index, i in enumerate(data):
+for index, i in enumerate(chan):
     if i >= std and index - prev_spike > inter_spike_window:
-        spike_index = index + np.argmax(data[index:index+inter_spike_window])
+        spike_index = index + np.argmax(chan[index:index+inter_spike_window])
         spike_times.append(spike_index)
-np.save(data_loc.split('.npy')[1]+'_tcs.npy', spike_times)
+np.save(os.path.join(out_loc, 'chan_%d_spike_times.npy' % chan), spike_times)
